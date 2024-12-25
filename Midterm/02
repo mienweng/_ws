@@ -1,0 +1,76 @@
+### 第二章：網站常見的安全漏洞與攻擊方式
+
+#### 2.1 SQL注入（SQL Injection）
+
+SQL注入是一種通過在Web表單或URL中插入惡意SQL語句來控制網站數據庫的攻擊方式。以下是防範SQL注入的常見方法：
+
+```python
+import pymysql
+
+# 使用預處理語句來防止SQL注入
+def get_user_by_id(user_id):
+    conn = pymysql.connect(host='localhost', user='user', password='password', db='testdb')
+    cursor = conn.cursor()
+    query = "SELECT * FROM users WHERE id = %s"
+    cursor.execute(query, (user_id,))
+    result = cursor.fetchone()
+    conn.close()
+    return result
+#### 2.2 跨站腳本攻擊（XSS）
+XSS攻擊通過將惡意JavaScript注入到網站頁面中，當用戶加載該頁面時，攻擊代碼將被執行。防止XSS的一個方法是對輸入進行過濾和編碼：
+
+html
+複製程式碼
+<!-- 用戶提交的數據進行HTML編碼 -->
+<input type="text" name="username" value="&lt;script&gt;alert('XSS Attack')&lt;/script&gt;">
+javascript
+複製程式碼
+// 使用JS編碼庫來防止XSS
+function escapeHtml(str) {
+    return str.replace(/[&<>"'\/]/g, function (match) {
+        const escape = {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            "\"": "&quot;",
+            "'": "&#x27;",
+            "/": "&#x2F;"
+        };
+        return escape[match];
+    });
+}
+2.3 服務拒絕攻擊（DoS/DDoS）
+DDoS攻擊是通過大量請求使網站服務無法正常運行，防止這類攻擊的措施包括設置速率限制和使用CDN。以下是DDoS防禦的簡單防禦代碼示例：
+
+python
+複製程式碼
+from flask import Flask, request, abort
+import time
+
+app = Flask(__name__)
+
+# 記錄IP訪問頻率
+requests = {}
+
+@app.before_request
+def limit_requests():
+    ip = request.remote_addr
+    current_time = time.time()
+
+    if ip in requests:
+        requests[ip].append(current_time)
+        # 只允許5秒鐘內最多5個請求
+        requests[ip] = [t for t in requests[ip] if current_time - t < 5]
+        if len(requests[ip]) > 5:
+            abort(429)  # Too Many Requests
+    else:
+        requests[ip] = [current_time]
+
+    return None
+
+@app.route('/')
+def home():
+    return "Hello, world!"
+
+if __name__ == "__main__":
+    app.run()
